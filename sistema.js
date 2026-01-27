@@ -1,6 +1,7 @@
-const { error } = require('node:console')
+
 const AgenteTransito = require('./AgenteTransito')
 const Multa = require('./Multa')
+const Condutor = require('./Condutor')
 
 // Classe responsável por centralizar a lógica do sistema
 class Sistema {
@@ -81,6 +82,30 @@ class Sistema {
         }
         return res
     }
+
+    listarTodosVeiculos(agente) {
+    if (!(agente instanceof AgenteTransito)) {
+        throw new Error('Apenas agentes podem listar todos os veículos')
+    }
+    return Array.from(this.veiculos.values())
+    }
+
+    listarTodosCondutores(agente) {
+    if (!(agente instanceof AgenteTransito)) {
+        throw new Error('Apenas agentes podem listar condutores')
+    }
+
+    const condutores = []
+
+    for (const u of this.usuarios.values()) {
+        if (u instanceof Condutor) {
+            condutores.push(u)
+        }
+    }
+
+    return condutores
+}
+
 
     // Registra uma multa (somente agente pode fazer isso)
     registrarMulta(agente, placa, tipo, valor, data = new Date().toISOString()) {
