@@ -1,179 +1,155 @@
-/* Classes necessarias para o funcionamento básico do case */
+const AgenteTransito = require('./AgenteTransito')
+const Multa = require('./Multa')
 
-class Veiculo{
-    constructor(placa,modelo,marca,cor){
-        this.placa = placa
-        this.modelo = modelo
-        this.marca = marca
-        this.cor = cor
-    }
-}
+// Classe responsável por centralizar a lógica do sistema
+class Sistema {
 
-class Usuario{
-    #senha
-    constructor(id,nome,cpf,email,senha){
-        this.id = id 
-        this.nome = nome
-        this.cpf = cpf
-        this.email = email
-        this.#senha = senha
-    }
-    login(senha) {
-        return this.#senha === senha;
-    }
-    atualizarSenha(novaSenha){
-        this.#senha = novaSenha
-    }
-}
+    constructor() {
+        // Mapas para facilitar buscas por chave
+        this.usuarios = new Map()   // key: id
+        this.veiculos = new Map()   // key: placa
+        this.multas = new Map()     // key: id
 
-class Condutor extends Usuario{
-    constructor(id,nome,cpf,email,senha,data_nascimento){
-        super(id,nome,cpf,email,senha)
-        this.data_nascimento = data_nascimento
-    }
-}
-
-class AgenteTransito extends Usuario{
-    constructor(id,nome,cpf,email,senha,matricula){
-        super(id,nome,cpf,email,senha)
-        this.matricula = matricula
-    }
-}
-
-class Multa{
-    constructor(id,idCliente,tipo,valor,data,status){
-        this.id = id
-        this.idCliente = idCliente
-        this.tipo = tipo
-        this.valor = valor
-        this.data = data
-        this.status = status
-    }
-}
-
-
-/* Implementacao da integracao entre atributos e metodos das classes implementadas */
-
-class Sistema{
-
-    constructor(){
-        this.usuarios = new Map() // key: id
-        this.veiculos = new Map() // key: placa
-        this.multas = new Map()   // key: id
+        // Contadores simples para gerar IDs
         this._nextUsuarioId = 1
         this._nextMultaId = 1
     }
 
-    gerarIdUsuario(){
+    gerarIdUsuario() {
         return this._nextUsuarioId++
     }
 
-    gerarIdMulta(){
+    gerarIdMulta() {
         return this._nextMultaId++
     }
 
-    addUsuario(usuario){
-        if(!usuario.id) usuario.id = this.gerarIdUsuario()
-        for(const u of this.usuarios.values()){
-            if(u.cpf === usuario.cpf){
-                console.log('CPF já cadastrado')
+    // Cadastra um usuário no sistema
+    addUsuario(usuario) {
+        if (!usuario.id) {
+            usuario.id = this.gerarIdUsuario()
+        }
+
+        // Verifica duplicidade de CPF e email
+        for (const u of this.usuarios.values()) {
+            if (u.cpf === usuario.cpf) {
+                throw new Error('CPF já cadastrado')
             }
-            if(u.email === usuario.email){
-                console.log('Email já cadastrado')
+            if (u.email === usuario.email) {
+                throw new Error('Email já cadastrado')
             }
         }
+
         this.usuarios.set(usuario.id, usuario)
         return usuario.id
     }
 
-    autenticar(id,senha){
+    // Busca direta pelo ID (Map facilita isso)
+    buscarUsuarioPorId(id) {
+        return this.usuarios.get(id) || null
+    }
+
+    // Autentica o usuário verificando a senha
+    autenticar(id, senha) {
         const u = this.buscarUsuarioPorId(id)
-        if(!u) return null
+        if (!u) return null
         return u.login(senha) ? u : null
     }
-    
-    buscarUsuarioPorId(id){
-        return this.usuarios.get(id) || null
-        
-    }
-    
-    addVeiculo(veiculo, usuarioId){
-        if(this.veiculos.has(veiculo.placa)) throw new Error('Veículo já cadastrado')
+
+    // Associa um veículo a um usuário
+    addVeiculo(veiculo, usuarioId) {
+        if (this.veiculos.has(veiculo.placa)) {
+            throw new Error('Veículo já cadastrado')
+        }
+
         const user = this.usuarios.get(usuarioId)
-        if(!user) throw new Error('Usuário não encontrado')
+        if (!user) {
+            throw new Error('Usuário não encontrado')
+        }
+
         veiculo.proprietarioId = usuarioId
         this.veiculos.set(veiculo.placa, veiculo)
     }
 
-    listarVeiculosPorUsuario(usuarioId){
+    // Lista todos os veículos de um usuário
+    listarVeiculosPorUsuario(usuarioId) {
         const res = []
-        for(const v of this.veiculos.values()) if(v.proprietarioId === usuarioId) res.push(v)
+        for (const v of this.veiculos.values()) {
+            if (v.proprietarioId === usuarioId) {
+                res.push(v)
+            }
+        }
         return res
     }
 
-    registrarMulta(agente, placa, tipo, valor, data = new Date().toISOString()){
-        if(!(agente instanceof AgenteTransito)) throw new Error('Apenas agentes podem registrar multas')
+    // Registra uma multa (somente agente pode fazer isso)
+    registrarMulta(agente, placa, tipo, valor, data = new Date().toISOString()) {
+        if (!(agente instanceof AgenteTransito)) {
+            throw new Error('Apenas agentes podem registrar multas')
+        }
+
         const veic = this.veiculos.get(placa)
-        if(!veic) throw new Error('Veículo não encontrado')
+        if (!veic) {
+            throw new Error('Veículo não encontrado')
+        }
+
         const id = this.gerarIdMulta()
-        const multa = new Multa(id, veic.proprietarioId, tipo, valor, data, 'pendente')
+        const multa = new Multa(
+            id,
+            veic.proprietarioId,
+            tipo,
+            valor,
+            data,
+            'pendente'
+        )
+
         this.multas.set(id, multa)
         return multa
     }
 
-    pagarMulta(usuarioId, multaId){
+    // Permite que o condutor pague sua multa
+    pagarMulta(usuarioId, multaId) {
         const multa = this.multas.get(multaId)
-        if(!multa) throw new Error('Multa não encontrada')
-        if(multa.idCliente !== usuarioId) throw new Error('Não autorizado')
-        if(multa.status !== 'pendente') throw new Error('Multa não pendente')
+        if (!multa) throw new Error('Multa não encontrada')
+        if (multa.idCliente !== usuarioId) throw new Error('Não autorizado')
+        if (multa.status !== 'pendente') throw new Error('Multa não pendente')
+
         multa.status = 'paga'
         return multa
     }
 
-    cancelarMulta(agente, multaId){
-        if(!(agente instanceof AgenteTransito)) throw new Error('Apenas agentes podem cancelar multas')
+    // Cancelamento de multa (somente agente)
+    cancelarMulta(agente, multaId) {
+        if (!(agente instanceof AgenteTransito)) {
+            throw new Error('Apenas agentes podem cancelar multas')
+        }
+
         const multa = this.multas.get(multaId)
-        if(!multa) throw new Error('Multa não encontrada')
+        if (!multa) throw new Error('Multa não encontrada')
+
         multa.status = 'cancelada'
         return multa
     }
 
-    listarMultasPorUsuario(usuarioId){
+    // Lista todas as multas de um usuário
+    listarMultasPorUsuario(usuarioId) {
         const res = []
-        for(const m of this.multas.values()) if(m.idCliente === usuarioId) res.push(m)
+        for (const m of this.multas.values()) {
+            if (m.idCliente === usuarioId) {
+                res.push(m)
+            }
+        }
         return res
     }
 
-    atualizarSenha(usuarioId, senhaAtual, novaSenha){
+    // Atualiza a senha após validação da senha atual
+    atualizarSenha(usuarioId, senhaAtual, novaSenha) {
         const u = this.usuarios.get(usuarioId)
-        if(!u) throw new Error('Usuário não encontrado')
-        if(!u.login(senhaAtual)) throw new Error('Senha atual incorreta')
+        if (!u) throw new Error('Usuário não encontrado')
+        if (!u.login(senhaAtual)) throw new Error('Senha atual incorreta')
+
         u.atualizarSenha(novaSenha)
         return true
     }
 }
 
-
-/* Teste */
-
-if(require.main === module){
-    const sistema = new Sistema()
-
-    const condutor = new Condutor(null,'João','11122233344','joao@example.com','1234','1990-01-01')
-    const agente = new AgenteTransito(null,'Maria','99988877766','maria@transito.com','abcd','M-001')
-
-    const idCondutor = sistema.addUsuario(condutor)
-    const idAgente = sistema.addUsuario(agente)
-
-    const veic = new Veiculo('ABC-1234','Civic','Honda','Prata')
-    sistema.addVeiculo(veic, idCondutor)
-
-    const multa = sistema.registrarMulta(agente, 'ABC-1234', 'Excesso de velocidade', 250)
-    console.log('Multa registrada:', multa)
-
-    const multasDoCondutor = sistema.listarMultasPorUsuario(idCondutor)
-    console.log('Multas do condutor:', multasDoCondutor)
-
-    const autenticado = sistema.autenticar(idCondutor,'1234')
-    console.log('Autenticado:', !!autenticado)
-}
+module.exports = Sistema
