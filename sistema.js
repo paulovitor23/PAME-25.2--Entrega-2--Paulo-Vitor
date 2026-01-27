@@ -1,3 +1,4 @@
+const { error } = require('node:console')
 const AgenteTransito = require('./AgenteTransito')
 const Multa = require('./Multa')
 
@@ -129,6 +130,26 @@ class Sistema {
         multa.status = 'cancelada'
         return multa
     }
+
+    recorrerMulta(usuarioId,multaId){
+        const multa = this.multas.get(multaId)
+
+        if(!multa){
+            throw new Error('Multa nao encontrada')
+        }
+        
+        if (multa.idCliente !== usuarioId){
+            throw new Error('Nao autorizado a recorrer esta multa')
+        }
+
+        if (multa.status !== 'pendente'){
+            throw new Error('Apenas multas pendentes podem ser recorridas')
+        }
+
+        multa.status = 'recorrida'
+        return multa
+    }
+
 
     // Lista todas as multas de um usuário
     listarMultasPorUsuario(usuarioId) {
