@@ -187,6 +187,30 @@ class Sistema {
         return res
     }
 
+    listarTodasMultas(agente){
+        if(!(agente instanceof AgenteTransito)){
+            throw new Error ('Apenas agentes podem listar todas as multas')
+        }
+        return Array.from(this.multas.values())
+    }
+
+    alterarStatusMulta(agente, multaId, novoStatus) {
+    if (!(agente instanceof AgenteTransito)) {
+        throw new Error('Apenas agentes podem alterar o status da multa')
+    }
+
+    const multa = this.multas.get(multaId)
+    if (!multa) throw new Error('Multa não encontrada')
+
+    const statusValidos = ['pendente', 'paga', 'cancelada', 'recorrida']
+    if (!statusValidos.includes(novoStatus)) {
+        throw new Error('Status inválido')
+    }
+
+    multa.status = novoStatus
+    return multa
+    }
+
     // Atualiza a senha após validação da senha atual
     atualizarSenha(usuarioId, senhaAtual, novaSenha) {
         const u = this.usuarios.get(usuarioId)
