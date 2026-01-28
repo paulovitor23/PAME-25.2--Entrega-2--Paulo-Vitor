@@ -95,6 +95,8 @@ function menuAgente(sistema,agente){
         console.log('5 - Ver todas as multas')
         console.log('6 - Alterar status da multa')
         console.log('7 - Cancelar multa')
+        console.log('8 - Buscar veiculo por placa')
+        console.log('9 - Gerar relatorio de multas')
         console.log('0 - Logout')
 
         opcao = readline.questionInt('Opcao: ')
@@ -102,7 +104,12 @@ function menuAgente(sistema,agente){
         try {
             switch (opcao) {
                 case 1:
-                    console.log(agente)
+                    console.log({
+                        id: agente.id,
+                        nome: agente.nome,
+                        email: agente.email
+                        })
+
                     break
                 case 2:
                     console.log(sistema.listarTodosVeiculos(agente))
@@ -121,6 +128,12 @@ function menuAgente(sistema,agente){
                     break
                 case 7:
                     cancelarMulta(sistema,agente)
+                    break
+                case 8:
+                    buscarVeiculoPorPlaca(sistema, agente)
+                    break
+                case 9:
+                    gerarRelatorio(sistema, agente)
                     break
                 case 0:
                     console.log('Logout realizado')
@@ -157,7 +170,12 @@ function menuCondutor(sistema,condutor){
         try {
             switch (opcao) {
                 case 1:
-                    console.log(condutor)
+                    console.log({
+                     id: condutor.id,
+                    nome: condutor.nome,
+                    email: condutor.email
+                    })
+
                     break
                 case 2:
                     console.log(sistema.listarMultasPorUsuario(condutor.id))
@@ -238,11 +256,19 @@ function alterarStatusMulta(sistema, agente) {
     console.log('Status atualizado')
 }
 
-function buscarVeiculoPorPlaca(sistema,agente){
-    const placa = readline.question('Placa:')
+function buscarVeiculoPorPlaca(sistema, agente) {
+    const placa = readline.question('Placa do veiculo: ')
     const veiculo = sistema.buscarVeiculoPorPlaca(placa)
-    console.log('Buscando placa...')
+
+    if (!veiculo) {
+        console.log('Veiculo nao encontrado')
+        return
+    }
+
+    console.log('\n=== VEICULO ENCONTRADO ===')
+    console.log(veiculo)
 }
+
 
 function listarMeusVeiculos(sistema, condutor) {
     const veiculos = sistema.listarVeiculosPorUsuario(condutor.id)
@@ -273,4 +299,26 @@ function atualizarEmail(sistema, condutor) {
     console.log('Email atualizado com sucesso')
 }
 
+function gerarRelatorio(sistema, agente) {
+    const r = sistema.gerarRelatorioMultas(agente)
+
+    console.log('\n=== RELATORIO DE MULTAS ===')
+    console.log(`Total: ${r.total}`)
+    console.log(`Pendentes: ${r.pendentes}`)
+    console.log(`Pagas: ${r.pagas}`)
+    console.log(`Canceladas: ${r.canceladas}`)
+    console.log(`Recorridas: ${r.recorridas}`)
+    console.log(`Valor pago: R$ ${r.valorPago.toFixed(2)}`)
+    console.log(`Valor pendente: R$ ${r.valorPendente.toFixed(2)}`)
+
+}
+
+
+function cancelarMulta(sistema, agente) {
+    const multaId = readline.questionInt('ID da multa: ')
+    sistema.cancelarMulta(agente, multaId)
+    console.log('Multa cancelada com sucesso')
+}
+
 module.exports = {menuPrincipal}
+

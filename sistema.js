@@ -73,8 +73,12 @@ class Sistema {
     }
 
     buscarVeiculoPorPlaca(placa) {
-    return this.veiculos.get(placa) || null
+    if (!placa) {
+        throw new Error('Placa invalida')
     }
+    return this.veiculos.get(placa) || null
+}
+
 
     removerVeiculo(usuarioId, placa) {
     const veiculo = this.veiculos.get(placa)
@@ -249,6 +253,45 @@ class Sistema {
 
         u.email = novoEmail
         return true
+    }
+
+    gerarRelatorioMultas(agente) {
+        if (!(agente instanceof AgenteTransito)) {
+            throw new Error('Apenas agentes podem gerar relatorio')
+        }
+
+        let total = 0
+        let pendentes = 0
+        let pagas = 0
+        let canceladas = 0
+        let recorridas = 0
+        let valorPago = 0
+        let valorPendente = 0
+
+        for (const m of this.multas.values()) {
+            total++
+
+            if (m.status === 'pendente') {
+                pendentes++
+                valorPendente += m.valor
+            }
+            if (m.status === 'paga') {
+                pagas++
+                valorPago += m.valor
+            }
+            if (m.status === 'cancelada') canceladas++
+            if (m.status === 'recorrida') recorridas++
+        }
+
+        return {
+            total,
+            pendentes,
+            pagas,
+            canceladas,
+            recorridas,
+            valorPago,
+            valorPendente
+        }
     }
 
 }
