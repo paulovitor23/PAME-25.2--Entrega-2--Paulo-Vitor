@@ -72,6 +72,21 @@ class Sistema {
         this.veiculos.set(veiculo.placa, veiculo)
     }
 
+    buscarVeiculoPorPlaca(placa) {
+    return this.veiculos.get(placa) || null
+    }
+
+    removerVeiculo(usuarioId, placa) {
+    const veiculo = this.veiculos.get(placa)
+    if (!veiculo) throw new Error('Veículo não encontrado')
+    if (veiculo.proprietarioId !== usuarioId) {
+        throw new Error('Não autorizado')
+    }
+
+    this.veiculos.delete(placa)
+    return true
+    }
+
     // Lista todos os veículos de um usuário
     listarVeiculosPorUsuario(usuarioId) {
         const res = []
@@ -176,6 +191,7 @@ class Sistema {
     }
 
 
+
     // Lista todas as multas de um usuário
     listarMultasPorUsuario(usuarioId) {
         const res = []
@@ -220,6 +236,22 @@ class Sistema {
         u.atualizarSenha(novaSenha)
         return true
     }
+    
+    atualizarEmail(usuarioId, novoEmail) {
+        for (const u of this.usuarios.values()) {
+            if (u.email === novoEmail) {
+                throw new Error('Email já cadastrado')
+            }
+        }
+
+        const u = this.usuarios.get(usuarioId)
+        if (!u) throw new Error('Usuário não encontrado')
+
+        u.email = novoEmail
+        return true
+    }
+
 }
+
 
 module.exports = Sistema
