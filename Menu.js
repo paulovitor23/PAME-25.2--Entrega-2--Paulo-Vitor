@@ -139,6 +139,7 @@ function menuCondutor(sistema,condutor){
     let opcao
 
     do {
+        console.log('\n=== MENU CONDUTOR ===')
         console.log('1 - Ver meus dados')
         console.log('2 - Ver minhas multas')
         console.log('3 - Cadastrar veiculo')
@@ -237,9 +238,9 @@ function alterarStatusMulta(sistema, agente) {
     console.log('Status atualizado')
 }
 
-function buscarVeiculoPorPlaca(sistema,placa){
+function buscarVeiculoPorPlaca(sistema,agente){
     const placa = readline.question('Placa:')
-    sistema.buscarVeiculoPorPlaca(placa)
+    const veiculo = sistema.buscarVeiculoPorPlaca(placa)
     console.log('Buscando placa...')
 }
 
